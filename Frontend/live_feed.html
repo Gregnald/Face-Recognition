@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Feed</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'live.css' %}">
+</head>
+<body>
+    <h1>Live Camera Feed</h1>
+    <div class="container">
+        <div class="live-feed">
+            <h2>Live Feed</h2>
+            <img id="liveVideo" src="{% url 'live_video' %}" alt="Live Camera Feed">
+        </div>
+        <div class="captured-frame">
+            <h2>Captured Frame</h2>
+            <img id="capturedImage" src="{% static 'placeholder.jpg' %}" alt="Captured Frame">
+        </div>
+    </div>
+    <button id="captureBtn">Capture</button>
+
+    <script>
+        const captureButton = document.getElementById("captureBtn");
+        const capturedImage = document.getElementById("capturedImage");
+
+        captureButton.addEventListener("click", async () => {
+            try {
+                const response = await fetch("{% url 'capture_frame' %}");
+                const data = await response.json();
+                if (data.image_url) {
+                    // Update the captured image with the new URL
+                    capturedImage.src = data.processed_image_url;
+                } else {
+                    alert("Failed to capture image.");
+                }
+            } catch (error) {
+                console.error("Error capturing frame:", error);
+            }
+        });
+    </script>
+</body>
+</html>

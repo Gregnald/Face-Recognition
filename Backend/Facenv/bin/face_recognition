@@ -1,4 +1,4 @@
-#!/home/kali/Desktop/Github/Face-Recognition/Facenv/bin/python3
+#!/home/kali/Desktop/Github/Face-Recognition/Backend/Facenv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

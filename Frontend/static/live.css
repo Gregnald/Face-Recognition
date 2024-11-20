@@ -1,0 +1,40 @@
+body {
+    background-color: #282c34;
+    color: white;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.container {
+    display: flex;
+    justify-content: space-around;
+    margin: 50px;
+}
+
+.live-feed, .captured-frame {
+    width: 45%;
+    text-align: center;
+}
+
+img {
+    width: 100%;
+    height: auto;
+    border: 2px solid white;
+}
+
+button {
+    display: block;
+    margin: 20px auto;
+    padding: 15px 30px;
+    background: linear-gradient(45deg, #4CAF50, #2196F3);
+    color: white;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
