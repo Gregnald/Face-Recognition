@@ -68,10 +68,15 @@ def live_video(request):
 import time  # Import time module for the delay
 
 # Add the new function here
-def factory(frame, tim):
+def factory(frame, tim, tolerance=0.6):
     """
     Processes the captured frame to recognize and mark known faces.
     The processed frame is then saved to the processed_frames directory.
+    
+    Args:
+        frame: The image frame to be processed.
+        tim: The timestamp to use for saving the processed frame.
+        tolerance: The tolerance level for face recognition matching.
     """
     # Find all face locations and encodings in the current frame
     face_locations = face_recognition.face_locations(frame)
@@ -79,7 +84,7 @@ def factory(frame, tim):
 
     for face_encoding, face_location in zip(face_encodings, face_locations):
         # Compare the face with known faces
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=tolerance)
         name = "Unknown"
 
         # Find the best match for the detected face
@@ -94,12 +99,18 @@ def factory(frame, tim):
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
         cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
 
+    # Draw the tolerance value on the top right corner of the frame
+    text_position = (frame.shape[1] - 300, 30)  # Adjusted for some margin from the right edge
+    tolerance_text = f"Tolerance: {tolerance}"
+    cv2.putText(frame, tolerance_text, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+
     # Save the processed frame with the same timestamp
     processed_file_name = f'processed_{tim}.jpg'
     processed_file_path = os.path.join(PROCESSED_FRAMES_DIR, processed_file_name)
     cv2.imwrite(processed_file_path, frame)
 
     return processed_file_path
+
 
 # Update the capture_frame function to call factory()
 def capture_frame(request):
@@ -120,8 +131,8 @@ def capture_frame(request):
             file_path = os.path.join(CAPTURED_FRAMES_DIR, file_name)
             cv2.imwrite(file_path, frame)
 
-            # Process the frame and store it
-            factory(frame, tim)
+            # Process the frame with a specified tolerance and store it
+            factory(frame, tim, tolerance=0.5)
 
             # Dynamically serve the file via URL
             image_url = f'/static/captured_frames/{file_name}'
