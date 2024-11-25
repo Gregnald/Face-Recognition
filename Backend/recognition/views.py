@@ -89,7 +89,7 @@ def usersignup(request):
             with open(json_file_path, 'w') as json_file:
                 json.dump(users_data, json_file, indent=4)
             
-            return JsonResponse({'status': 'success', 'message': 'User registered successfully!'})
+            return redirect('login')
 
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Error reading or writing users database.'})
