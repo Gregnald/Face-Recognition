@@ -8,9 +8,14 @@
     <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
 <body>
-    <h1>Face Recognition</h1>
-    <a href="{% url 'live_feed' %}">
-        <button>Get Started</button>
-    </a>
+    <div class="container">
+        <h1 id="fr">Face Recognition</h1>
+        <a href="{% url 'login' %}">
+            <button class="button1">LOG IN</button>
+        </a>
+        <a href="{% url 'signup' %}">
+            <button class="button">GET STARTED</button>
+        </a>
+    </div>
 </body>
 </html>

@@ -1,9 +1,9 @@
-from django.http import StreamingHttpResponse, JsonResponse
+from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
 from django.shortcuts import render
 import cv2
 import os
 import threading
-import time
+import time, csv
 import face_recognition
 from django.conf import settings
 
@@ -22,6 +22,78 @@ lock = threading.Lock()
 # Known face encodings and names
 known_face_encodings = []
 known_face_names = []
+
+def login(request):
+    return render(request, 'login.html')
+
+def signup(request):
+    return render(request, 'signup.html')
+
+import json
+import os
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+
+def userlogin(request):
+    if request.method == 'POST':
+        # Get username and password from the POST request
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Path to the users.json file
+        json_file_path = os.path.join(os.path.dirname(__file__), 'users.json')
+        
+        try:
+            # Load users from the JSON file
+            with open(json_file_path, 'r') as json_file:
+                users_data = json.load(json_file)
+            
+            # Validate credentials
+            if username in users_data and users_data[username] == password:
+                # Redirect to the live_feed view on successful login
+                return redirect('live_feed')
+            else:
+                # Return an error message on invalid login
+                return render(request, 'login.html', {'error': 'Invalid username or password.'})
+        except FileNotFoundError:
+            return render(request, 'login.html', {'error': 'Users database not found.'})
+        except json.JSONDecodeError:
+            return render(request, 'login.html', {'error': 'Error reading users database.'})
+    return render(request, 'login.html')
+
+
+def usersignup(request):
+    if request.method == 'POST':
+        # Get the username and password from the POST request
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # Path to the users.json file
+        json_file_path = os.path.join(os.path.dirname(__file__), 'users.json')
+
+        try:
+            # Read existing data from the JSON file
+            if os.path.exists(json_file_path):
+                with open(json_file_path, 'r') as json_file:
+                    users_data = json.load(json_file)
+            else:
+                users_data = {}
+
+            # Add the new user credentials to the data
+            if username in users_data:
+                return JsonResponse({'status': 'error', 'message': 'Username already exists.'})
+            
+            users_data[username] = password
+
+            # Write the updated data back to the JSON file
+            with open(json_file_path, 'w') as json_file:
+                json.dump(users_data, json_file, indent=4)
+            
+            return JsonResponse({'status': 'success', 'message': 'User registered successfully!'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Error reading or writing users database.'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 def load_known_faces():
     """
@@ -71,46 +143,42 @@ import time  # Import time module for the delay
 def factory(frame, tim, tolerance=0.6):
     """
     Processes the captured frame to recognize and mark known faces.
-    The processed frame is then saved to the processed_frames directory.
-    
-    Args:
-        frame: The image frame to be processed.
-        tim: The timestamp to use for saving the processed frame.
-        tolerance: The tolerance level for face recognition matching.
+    Logs the date, time, and face identification details in a CSV file.
     """
-    # Find all face locations and encodings in the current frame
     face_locations = face_recognition.face_locations(frame)
     face_encodings = face_recognition.face_encodings(frame, face_locations)
 
-    for face_encoding, face_location in zip(face_encodings, face_locations):
-        # Compare the face with known faces
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=tolerance)
-        name = "Unknown"
+    # CSV file path
+    csv_file_path = os.path.join(settings.BASE_DIR, 'Backend/face_logs.csv')
 
-        # Find the best match for the detected face
-        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        best_match_index = None if not face_distances.size else face_distances.argmin()
-        
-        if best_match_index is not None and matches[best_match_index]:
-            name = known_face_names[best_match_index]
+    # Open the CSV file in append mode
+    with open(csv_file_path, mode='a', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        # Iterate through detected faces
+        for face_encoding, face_location in zip(face_encodings, face_locations):
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=tolerance)
+            name = "Unknown"
 
-        # Draw a box around the face and label it
-        top, right, bottom, left = face_location
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-        cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+            # Find the best match
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = None if not face_distances.size else face_distances.argmin()
+            if best_match_index is not None and matches[best_match_index]:
+                name = known_face_names[best_match_index]
 
-    # Draw the tolerance value on the top right corner of the frame
-    text_position = (frame.shape[1] - 300, 30)  # Adjusted for some margin from the right edge
-    tolerance_text = f"Tolerance: {tolerance}"
-    cv2.putText(frame, tolerance_text, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+            # Draw face box and label
+            top, right, bottom, left = face_location
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+            cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
 
-    # Save the processed frame with the same timestamp
+            # Log the detection
+            csv_writer.writerow([time.strftime("%Y-%m-%d"), time.strftime("%H:%M:%S"), name])
+
+    # Save the processed frame
     processed_file_name = f'processed_{tim}.jpg'
     processed_file_path = os.path.join(PROCESSED_FRAMES_DIR, processed_file_name)
     cv2.imwrite(processed_file_path, frame)
 
     return processed_file_path
-
 
 # Update the capture_frame function to call factory()
 def capture_frame(request):
