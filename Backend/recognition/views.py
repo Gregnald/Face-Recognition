@@ -123,8 +123,25 @@ def home(request):
 def live_feed(request):
     return render(request, 'live_feed.html')
 
+# Initialize webcam dynamically
+def get_video_capture():
+    """
+    Dynamically initializes and returns the video capture object.
+    Ensures the webcam can be restarted if released earlier.
+    """
+    global video_capture
+    if not video_capture or not video_capture.isOpened():
+        video_capture = cv2.VideoCapture(0)
+    return video_capture
+
+# Modify the live_video generator
 def gen_frames():
+    """
+    Generates video frames for the live feed.
+    Dynamically initializes the webcam if not already initialized.
+    """
     while True:
+        video_capture = get_video_capture()  # Ensure webcam is initialized
         with lock:
             success, frame = video_capture.read()
             if not success:
@@ -133,6 +150,7 @@ def gen_frames():
         frame = buffer.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 
 def live_video(request):
     return StreamingHttpResponse(gen_frames(), content_type='multipart/x-mixed-replace; boundary=frame')
@@ -207,3 +225,13 @@ def capture_frame(request):
             processed_image_url = f'/static/processed_frames/processed_{tim}.jpg'
             return JsonResponse({'image_url': image_url, 'processed_image_url': processed_image_url})
     return JsonResponse({'error': 'Failed to capture frame'}, status=500)
+
+def release_camera(request):
+    """
+    Releases the video capture object when the user navigates away.
+    """
+    global video_capture
+    if video_capture.isOpened():
+        video_capture.release()
+        return JsonResponse({'status': 'success', 'message': 'Camera released successfully.'})
+    return JsonResponse({'status': 'error', 'message': 'Camera was not active.'}, status=500)

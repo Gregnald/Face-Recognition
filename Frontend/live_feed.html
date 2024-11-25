@@ -24,13 +24,12 @@
     <script>
         const captureButton = document.getElementById("captureBtn");
         const capturedImage = document.getElementById("capturedImage");
-
+    
         captureButton.addEventListener("click", async () => {
             try {
                 const response = await fetch("{% url 'capture_frame' %}");
                 const data = await response.json();
                 if (data.image_url) {
-                    // Update the captured image with the new URL
                     capturedImage.src = data.processed_image_url;
                 } else {
                     alert("Failed to capture image.");
@@ -39,6 +38,15 @@
                 console.error("Error capturing frame:", error);
             }
         });
-    </script>
+    
+        // Cleanup webcam when navigating away
+        window.addEventListener("beforeunload", async () => {
+            try {
+                await fetch("{% url 'release_camera' %}");
+            } catch (error) {
+                console.error("Error releasing camera:", error);
+            }
+        });
+    </script>    
 </body>
 </html>

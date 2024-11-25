@@ -13,4 +13,5 @@ urlpatterns = [
     path('userlogin/', views.userlogin, name='userlogin'),
     path('signup', views.signup, name="signup"),
     path('usersignup/', views.usersignup, name='usersignup'),
-] + static('/captured_frames/', document_root=os.path.join(settings.BASE_DIR, 'captured_frames'))
+    path('release_camera/', views.release_camera, name='release_camera'),
+]# + static('/captured_frames/', document_root=os.path.join(settings.BASE_DIR, 'captured_frames'))
