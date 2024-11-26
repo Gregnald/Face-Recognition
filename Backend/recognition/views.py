@@ -161,13 +161,20 @@ import time  # Import time module for the delay
 def factory(frame, tim, tolerance=0.6):
     """
     Processes the captured frame to recognize and mark known faces.
-    Logs the date, time, and face identification details in a CSV file.
+    Logs the date, time, face identification details, and tolerance in a CSV file.
+    Adds the tolerance value to the top-right corner of the processed image.
     """
     face_locations = face_recognition.face_locations(frame)
     face_encodings = face_recognition.face_encodings(frame, face_locations)
 
     # CSV file path
     csv_file_path = os.path.join(settings.BASE_DIR, 'Backend/face_logs.csv')
+
+    # Check if CSV file exists; if not, create it with headers
+    if not os.path.exists(csv_file_path):
+        with open(csv_file_path, mode='w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(["Date", "Time", "Name", "Tolerance"])  # Add headers
 
     # Open the CSV file in append mode
     with open(csv_file_path, mode='a', newline='') as csv_file:
@@ -188,8 +195,13 @@ def factory(frame, tim, tolerance=0.6):
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
             cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
 
-            # Log the detection
-            csv_writer.writerow([time.strftime("%Y-%m-%d"), time.strftime("%H:%M:%S"), name])
+            # Log the detection with tolerance value
+            csv_writer.writerow([time.strftime("%Y-%m-%d"), time.strftime("%H:%M:%S"), name, tolerance])
+
+    # Add tolerance text to the top right corner
+    tolerance_text = f"Tolerance: {tolerance}"
+    text_position = (frame.shape[1] - 300, 50)  # Adjust position as needed
+    cv2.putText(frame, tolerance_text, text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
     # Save the processed frame
     processed_file_name = f'processed_{tim}.jpg'
