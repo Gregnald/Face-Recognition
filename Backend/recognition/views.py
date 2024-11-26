@@ -1,6 +1,7 @@
 from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
-from django.shortcuts import render
 import cv2
+import json
+from django.shortcuts import render, redirect
 import os
 import threading
 import time, csv
@@ -28,11 +29,6 @@ def login(request):
 
 def signup(request):
     return render(request, 'signup.html')
-
-import json
-import os
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
 
 def userlogin(request):
     if request.method == 'POST':
